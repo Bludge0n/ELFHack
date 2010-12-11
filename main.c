@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-int _t;
+int hello();
 
 int main() {
-    printf("%d\n", _t);
+    printf("%d\n", hello());
 }

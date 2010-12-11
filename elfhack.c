@@ -96,7 +96,7 @@ void ELFMakeGlobal(char * symbol) {
 int main(int argc, char * argv[]) {
     int i;
     ELFInit(argv[1]);
-    ELFMakeGlobal("_t\0");
+    ELFMakeGlobal("hello\0");
     ELFDeInit();
     return 0;
 }
