@@ -3,6 +3,10 @@
 
 #define EI_NIDENT 16
 
+#define ELF_R_SYM(info) ((info) >> 8)
+#define ELF_R_TYPE(info) ((unsigned char)(info))
+#define ELF_R_INFO(s, t) ((s) << 8 + (unsigned char)(t))
+
 #define SHT_NULL        0
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
@@ -66,6 +70,17 @@ typedef struct {
     Elf32_Half st_shndx;
 } Elf32_Sym;
 
+typedef struct {
+    Elf32_Addr r_offset;
+    Elf32_Word r_info;
+} Elf32_Rel;
+
+typedef struct {
+    Elf32_Addr r_offset;
+    Elf32_Word r_info;
+    Elf32_Sword r_addend;
+} Elf32_Rela;
+
 /* ELF header */
 Elf32_Ehdr * ehdr = NULL;
 /* Section Header */
@@ -79,6 +94,9 @@ char * strtab = NULL;
 /* Symbol Table */
 Elf32_Sym * symtab = NULL;
 unsigned int n_symtab = 0;
+/* Relocation Entry */
+Elf32_Rel * relent = NULL;
+unsigned int n_relent = 0;
 
 /* Write section headers back to file */
 void ELFWriteShdr();

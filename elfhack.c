@@ -39,6 +39,9 @@ static void init_symtab() {
     n_symtab = shdr[i].sh_size / sizeof(Elf32_Sym);
 }
 
+static void init_relent() {
+}
+
 void ELFWriteShdr() {
     fseek(fp, ehdr->e_shoff, SEEK_SET);
     fwrite((void *)shdr, sizeof(Elf32_Shdr), ehdr->e_shnum, fp);
