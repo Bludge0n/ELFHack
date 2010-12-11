@@ -3,6 +3,23 @@
 
 #define EI_NIDENT 16
 
+#define SHT_NULL        0
+#define SHT_PROGBITS    1
+#define SHT_SYMTAB      2
+#define SHT_STRTAB      3
+#define SHT_RELA        4
+#define SHT_HASH        5
+#define SHT_DYNAMIC     6
+#define SHT_NOTE        7
+#define SHT_NOBITS      8
+#define SHT_REL         9
+#define SHT_SHLIB       10
+#define SHT_DYNSYM      11
+#define SHT_LOPROC      0x70000000
+#define SHT_HIPROC      0x7fffffff
+#define SHT_LOUSER      0x80000000
+#define SHT_HIUSER      0xffffffff
+
 typedef unsigned int Elf32_Addr;
 typedef unsigned short int Elf32_Half;
 typedef unsigned int Elf32_Off;
@@ -40,13 +57,27 @@ typedef struct {
     Elf32_Word sh_entsize;
 } Elf32_Shdr;
 
+typedef struct {
+    Elf32_Word st_name;
+    Elf32_Addr st_value;
+    Elf32_Word st_size;
+    unsigned char st_info;
+    unsigned char st_other;
+    Elf32_Half st_shndx;
+} Elf32_Sym;
+
 /* ELF header */
 Elf32_Ehdr * header = NULL;
 /* Section Header */
 Elf32_Shdr * sh_list = NULL;
 /* ELF File */
 FILE * fp = NULL;
+/* Section Header String Table */
+char * shstrtab = NULL;
 /* String Table */
 char * strtab = NULL;
+/* Symbol Table */
+Elf32_Sym * symtab = NULL;
+unsigned int n_symtab = 0;
 
 #endif

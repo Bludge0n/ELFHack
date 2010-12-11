@@ -1,7 +1,7 @@
 CC=gcc
 TARGET=elfcheck
 
-all: main elfhack.c
+all: test.o elfhack.c
 	@$(CC) -o $(TARGET) elfhack.c
 	@./$(TARGET)
 	@rm $(TARGET)
