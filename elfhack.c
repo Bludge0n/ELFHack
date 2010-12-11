@@ -41,7 +41,7 @@ void init_symtab() {
 
 
 void init() {
-    fp = fopen("test.o", "rb");
+    fp = fopen("test.o", "r+");
     init_elf_header();
     init_section_list();
     init_shstrtab();
@@ -64,9 +64,28 @@ int main(int argc, char * argv) {
     init();
 
     for (i = 0; i < n_symtab; i++)
-        if (strcmp("hello\0", strtab + symtab[i].st_name))
-            printf("%d\t%s\n", symtab[i].st_info, strtab + symtab[i].st_name);
+        if (!strcmp("hello\0", strtab + symtab[i].st_name))
+            break;
+    printf("%d\n", symtab[i].st_info);
+    symtab[i].st_info = 18;
+    Elf32_Sym tmp = symtab[i];
+    symtab[i] = symtab[n_symtab - 1];
+    symtab[n_symtab - 1] = tmp;
+    /*
+    tmp = symtab[5];
+    symtab[5] = symtab[6];
+    symtab[6] = tmp;
+    */
+    for (i = 0; i < header->e_shnum; i++)
+        if (sh_list[i].sh_type == SHT_SYMTAB)
+            break;
+    fseek(fp, sh_list[i].sh_offset, SEEK_SET);
+    fwrite((void *)symtab, sh_list[i].sh_size, 1, fp);
+    sh_list[7].sh_info = 7;
+    fseek(fp, header->e_shoff, SEEK_SET);
+    fwrite((void *)sh_list, sizeof(Elf32_Shdr), header->e_shnum, fp);
 
+    fflush(fp);
     deinit();
     return 0;
 }
