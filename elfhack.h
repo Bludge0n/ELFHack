@@ -67,9 +67,9 @@ typedef struct {
 } Elf32_Sym;
 
 /* ELF header */
-Elf32_Ehdr * header = NULL;
+Elf32_Ehdr * ehdr = NULL;
 /* Section Header */
-Elf32_Shdr * sh_list = NULL;
+Elf32_Shdr * shdr = NULL;
 /* ELF File */
 FILE * fp = NULL;
 /* Section Header String Table */
@@ -79,5 +79,16 @@ char * strtab = NULL;
 /* Symbol Table */
 Elf32_Sym * symtab = NULL;
 unsigned int n_symtab = 0;
+
+/* Write section headers back to file */
+void ELFWriteShdr();
+/* Write symbol table back to file */
+void ELFWriteSymtab();
+/* Should be called before any other ELFfuncs, ELF file path should be passed. */
+void ELFInit(char * path);
+/* Should be called at the end of ELF hack */
+void ELFDeInit();
+/* It's an example, make a symbol in ELF file from local to global (symbol ends with '\0') */
+void ELFMakeGlobal(char * symbol);
 
 #endif

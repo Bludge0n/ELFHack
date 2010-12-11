@@ -3,89 +3,100 @@
 #include <string.h>
 #include "elfhack.h"
 
-void init_elf_header() {
-    header = (Elf32_Ehdr *)malloc(sizeof(Elf32_Ehdr));
-    fread((void *)header, sizeof(Elf32_Ehdr), 1, fp);
+static void init_ehdr() {
+    ehdr = (Elf32_Ehdr *)malloc(sizeof(Elf32_Ehdr));
+    fread((void *)ehdr , sizeof(Elf32_Ehdr), 1, fp);
 }
 
-void init_section_list() {
-    fseek(fp, header->e_shoff, SEEK_SET);
-    sh_list = (Elf32_Shdr *)malloc(header->e_shnum * sizeof(Elf32_Shdr));
-    fread((void *)sh_list, sizeof(Elf32_Shdr), header->e_shnum, fp);
+static void init_shdr() {
+    fseek(fp, ehdr->e_shoff, SEEK_SET);
+    shdr = (Elf32_Shdr *)malloc(ehdr->e_shnum * sizeof(Elf32_Shdr));
+    fread((void *)shdr, sizeof(Elf32_Shdr), ehdr->e_shnum, fp);
 }
 
-void init_shstrtab() {
-    shstrtab = (char *)malloc(sh_list[header->e_shstrndx].sh_size);
-    fseek(fp, sh_list[header->e_shstrndx].sh_offset, SEEK_SET);
-    fread((void *)shstrtab, sh_list[header->e_shstrndx].sh_size, 1, fp);
+static void init_shstrtab() {
+    shstrtab = (char *)malloc(shdr[ehdr->e_shstrndx].sh_size);
+    fseek(fp, shdr[ehdr->e_shstrndx].sh_offset, SEEK_SET);
+    fread((void *)shstrtab, shdr[ehdr->e_shstrndx].sh_size, 1, fp);
 }
 
-void init_strtab() {
-    int index = header->e_shnum - 1;
-    strtab = (char *)malloc(sh_list[index].sh_size);
-    fseek(fp, sh_list[index].sh_offset, SEEK_SET);
-    fread((void *)strtab, sh_list[index].sh_size, 1, fp);
+static void init_strtab() {
+    int index = ehdr->e_shnum - 1;
+    strtab = (char *)malloc(shdr[index].sh_size);
+    fseek(fp, shdr[index].sh_offset, SEEK_SET);
+    fread((void *)strtab, shdr[index].sh_size, 1, fp);
 }
 
-void init_symtab() {
+static void init_symtab() {
     /* returns entry number in symbol table */
     int i;
-    for (i = 0; i < header->e_shnum; i++)
-        if (sh_list[i].sh_type == SHT_SYMTAB)
+    for (i = 0; i < ehdr->e_shnum; i++)
+        if (shdr[i].sh_type == SHT_SYMTAB)
             break;
-    symtab = (Elf32_Sym *)malloc(sh_list[i].sh_size);
-    fseek(fp, sh_list[i].sh_offset, SEEK_SET);
-    fread((void *)symtab, sh_list[i].sh_size, 1, fp);
-    n_symtab = sh_list[i].sh_size / sizeof(Elf32_Sym);
+    symtab = (Elf32_Sym *)malloc(shdr[i].sh_size);
+    fseek(fp, shdr[i].sh_offset, SEEK_SET);
+    fread((void *)symtab, shdr[i].sh_size, 1, fp);
+    n_symtab = shdr[i].sh_size / sizeof(Elf32_Sym);
 }
 
+void ELFWriteShdr() {
+    fseek(fp, ehdr->e_shoff, SEEK_SET);
+    fwrite((void *)shdr, sizeof(Elf32_Shdr), ehdr->e_shnum, fp);
+    fflush(fp);
+}
 
-void init() {
-    fp = fopen("test.o", "r+");
-    init_elf_header();
-    init_section_list();
+void ELFWriteSymtab() {
+    int i;
+    for (i = 0; i < ehdr->e_shnum; i++)
+        if (shdr[i].sh_type == SHT_SYMTAB)
+            break;
+    fseek(fp, shdr[i].sh_offset, SEEK_SET);
+    fwrite((void *)symtab, shdr[i].sh_size, 1, fp);
+    fflush(fp);
+}
+
+void ELFInit(char * path) {
+    fp = fopen(path, "r+");
+    init_ehdr();
+    init_shdr();
     init_shstrtab();
     init_strtab();
     init_symtab();
 }
 
-void deinit() {
+void ELFDeInit() {
     /* free memory in heap */
-    free(header);
-    free(sh_list);
+    free(ehdr);
+    free(shdr);
     free(symtab);
     free(shstrtab);
     free(strtab);
     fclose(fp);
 }
 
-int main(int argc, char * argv) {
+void ELFMakeGlobal(char * symbol) {
     int i;
-    init();
-
+    Elf32_Sym tmp;
     for (i = 0; i < n_symtab; i++)
-        if (!strcmp("hello\0", strtab + symtab[i].st_name))
+        if (!strcmp(symbol, strtab + symtab[i].st_name))
             break;
-    printf("%d\n", symtab[i].st_info);
-    symtab[i].st_info = 18;
-    Elf32_Sym tmp = symtab[i];
+    symtab[i].st_info = (0x01 << 4) + (symtab[i].st_info & 0xf);
+    tmp = symtab[i];
     symtab[i] = symtab[n_symtab - 1];
     symtab[n_symtab - 1] = tmp;
-    /*
-    tmp = symtab[5];
-    symtab[5] = symtab[6];
-    symtab[6] = tmp;
-    */
-    for (i = 0; i < header->e_shnum; i++)
-        if (sh_list[i].sh_type == SHT_SYMTAB)
+    for (i = 0; i < ehdr->e_shnum; i++) {
+        if (!strcmp(".symtab\0", shstrtab + shdr[i].sh_name))
             break;
-    fseek(fp, sh_list[i].sh_offset, SEEK_SET);
-    fwrite((void *)symtab, sh_list[i].sh_size, 1, fp);
-    sh_list[7].sh_info = 7;
-    fseek(fp, header->e_shoff, SEEK_SET);
-    fwrite((void *)sh_list, sizeof(Elf32_Shdr), header->e_shnum, fp);
+    }
+    shdr[i].sh_info -= 1;
+    ELFWriteShdr();
+    ELFWriteSymtab();
+}
 
-    fflush(fp);
-    deinit();
+int main(int argc, char * argv[]) {
+    int i;
+    ELFInit(argv[1]);
+    ELFMakeGlobal("_t\0");
+    ELFDeInit();
     return 0;
 }
