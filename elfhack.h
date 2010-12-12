@@ -24,6 +24,16 @@
 #define SHT_LOUSER      0x80000000
 #define SHT_HIUSER      0xffffffff
 
+#define PT_NULL         0
+#define PT_LOAD         1
+#define PT_DYNAMIC      2
+#define PT_INTERP       3
+#define PT_NOTE         4
+#define PT_SHLIB        5
+#define PT_PHDR         6
+#define PT_LOPROC       0x70000000
+#define PT_HIPROC       0x7fffffff
+
 typedef unsigned int Elf32_Addr;
 typedef unsigned short int Elf32_Half;
 typedef unsigned int Elf32_Off;
@@ -81,9 +91,20 @@ typedef struct {
     Elf32_Sword r_addend;
 } Elf32_Rela;
 
+typedef struct {
+    Elf32_Word p_type;
+    Elf32_Off p_offset;
+    Elf32_Addr p_vaddr;
+    Elf32_Addr p_paddr;
+    Elf32_Word p_filesz;
+    Elf32_Word p_memsz;
+    Elf32_Word p_flags;
+    Elf32_Word p_align;
+} Elf32_Phdr;
+
 /* ELF header */
 Elf32_Ehdr * ehdr = NULL;
-/* Section Header */
+/* Section Header Table*/
 Elf32_Shdr * shdr = NULL;
 /* ELF File */
 FILE * fp = NULL;
@@ -95,8 +116,15 @@ char * strtab = NULL;
 Elf32_Sym * symtab = NULL;
 unsigned int n_symtab = 0;
 /* Relocation Entry */
+/* NOTICE: actually, an ELF object file
+ * may have more than one REL section, 
+ * however, the program is just making a
+ * demo of what Relocation Entry is like
+ */
 Elf32_Rel * relent = NULL;
 unsigned int n_relent = 0;
+/* Program Header Table */
+Elf32_Phdr * phdr = NULL;
 
 /* Write section headers back to file */
 void ELFWriteShdr();
@@ -108,5 +136,9 @@ void ELFInit(char * path);
 void ELFDeInit();
 /* It's an example, make a symbol in ELF file from local to global (symbol ends with '\0') */
 void ELFMakeGlobal(char * symbol);
+/* Get a section header by name */
+Elf32_Shdr * ELFGetShdrByName(char * name);
+/* Get a symbol entry by name */
+Elf32_Sym * ELFGetSymByName(char * name);
 
 #endif

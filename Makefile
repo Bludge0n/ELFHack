@@ -3,7 +3,7 @@ TARGET=elfcheck
 
 all: test.o elfhack.c
 	@$(CC) -o $(TARGET) elfhack.c
-	@./$(TARGET) test.o
+	@./$(TARGET) a.out
 	@rm $(TARGET)
 
 test.o: test.c
